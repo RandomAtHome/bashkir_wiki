@@ -6,9 +6,12 @@ import urllib.request
 
 
 HOST_URL = "http://ba.wikipedia.org"
+NEXT_PAGE = "Киләһе бит"
 
-out = open("material.txt", "w", encoding='utf-8')
-# out_html = open("results.html", "w", encoding='utf-8')
+url_start = 'https://ba.wikipedia.org/wiki/%D0%9C%D0%B0%D1%85%D1%81%D1%83%D1%81:%D0%91%D0%B0%D1%80%D0%BB%D1%8B%D2%A1_%D0%B1%D0%B8%D1%82%D3%99%D1%80'
+
+material = open("material.txt", "w", encoding='utf-8')
+out_html = open("results_gen.html", "w", encoding='utf-8')
 in_params = open("params.txt", "r")
 
 
@@ -18,17 +21,16 @@ if line[0] == "page-limit":
 else:
     limit = 100
 # this way we delimit how much we will show
-max_ref = 0
 
 
 # start of reading Wiki
-url_start = 'https://ba.wikipedia.org/wiki/%D0%9C%D0%B0%D1%85%D1%81%D1%83%D1%81:%D0%91%D0%B0%D1%80%D0%BB%D1%8B%D2%A1_%D0%B1%D0%B8%D1%82%D3%99%D1%80'
 next_page_link = url_start
 
 while next_page_link != "":
 
     to_parse = []
 
+    # opening page with links to Articles
     request = urllib.request.Request(next_page_link)
     request.add_header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
     html = urllib.request.urlopen(request).read().decode('utf-8')
@@ -44,7 +46,7 @@ while next_page_link != "":
     next_page_link = ""
     navigation = soup.find_all("div", class_="mw-allpages-nav")
     for nav_tag in navigation[0].contents:
-        if "Киләһе бит" in nav_tag.string:
+        if NEXT_PAGE in nav_tag.string:
             next_page_link = HOST_URL + nav_tag.get('href')
 
     # getting info from found pages
@@ -54,27 +56,30 @@ while next_page_link != "":
         link.encode('utf-8')
         name = soup.find('title').string
         for tag_refl in soup.find_all('ol', class_="references"):
-            amounts = 0
+            amount_l = 0
             for tag_link in tag_refl.contents:
                 if tag_link.name == 'li':
-                    amounts += 1
-            link += " " + str(amounts)
-        print(name, link, file=out)
+                    amount_l += 1
+            link += ".-.-.-." + str(amount_l) # this is used, because it forgot what amounts is in print()
+        print(name, link, file=material, sep=".-.-.-.")
+        # such a strange sep, in order to split it later
         soup.clear()
-        """ tag_refl.contents resembles a list of tags inside tag <ol>
-            there are N external references, each
-            closed between 2 tags - <li> and </li>
-            and there is a closing tag </ol>
-            in summary we have 2 * N + 1 elements in tag_refl.contents,
-            where N is number of ext. ref.
+        """ 
+        We search <li> tags through the tag_refl.contents
         """
-        
+
 # end of reading Wiki
 
+material.close()
+in_links = open("material.txt", "r")
+results = []
+for link_result in in_links.readlines:
+    results.append(link_result.split(sep=".-.-.-."))
+
 # sorting what we have
-# results.sort(key=lambda x: -x[2])
-# results = results[:limit + 1]
-#results = [results]
+results.sort(key=lambda x: -x[2])
+results = results[:limit + 1]
+
 # Jinja code interpretating results
 result_page = Template(u'''\
 <html>
@@ -98,6 +103,6 @@ result_page = Template(u'''\
 </html>''')
 # Jinja code ended
 
-# print(result_page.render(item_list=results), file=out_html)
+print(result_page.render(item_list=results), file=out_html)
 out_txt.close()
 # creating output file and closing it

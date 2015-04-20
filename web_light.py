@@ -6,22 +6,18 @@ import urllib.request
 
 
 HOST_URL = "http://ba.wikipedia.org"
+NEXT_PAGE = "Киләһе бит"
 
-out_html = open("results.html", "w", encoding='utf-8')
-in_params = open("params.txt", "r")
+url_start = 'https://ba.wikipedia.org/wiki/%D0%9C%D0%B0%D1%85%D1%81%D1%83%D1%81:%D0%91%D0%B0%D1%80%D0%BB%D1%8B%D2%A1_%D0%B1%D0%B8%D1%82%D3%99%D1%80'
+out_html = open("results_best.html", "w", encoding='utf-8')
 
-line = in_params.readline().strip().split()
-if line[0] == "page-limit":
-    limit = int(line[1])
-else:
-    limit = 100
-# this way we delimit how much we will show
+
 max_ref = 0
-
+results = ("None", "None", 0)
 
 # start of reading Wiki
-url_start = 'https://ba.wikipedia.org/wiki/%D0%9C%D0%B0%D1%85%D1%81%D1%83%D1%81:%D0%91%D0%B0%D1%80%D0%BB%D1%8B%D2%A1_%D0%B1%D0%B8%D1%82%D3%99%D1%80'
 next_page_link = url_start
+
 
 while next_page_link != "":
 
@@ -42,7 +38,7 @@ while next_page_link != "":
     next_page_link = ""
     navigation = soup.find_all("div", class_="mw-allpages-nav")
     for nav_tag in navigation[0].contents:
-        if "Киләһе бит" in nav_tag.string:
+        if NEXT_PAGE in nav_tag.string:
             next_page_link = HOST_URL + nav_tag.get('href')
 
     # getting info from found pages
@@ -52,29 +48,21 @@ while next_page_link != "":
         link.encode('utf-8')
         name = soup.find('title').string
         for tag_refl in soup.find_all('ol', class_="references"):
-            amount = 0
+            amount_l = 0
             for tag_link in tag_refl.contents:
                 if tag_link.name == 'li':
-                    amount += 1
+                    amount_l += 1
 
-            if amount > max_ref:
-                max_ref = amount
-                results = (name, link, amount)
+            if amount_l > max_ref:
+                max_ref = amount_l
+                results = (name, link, amount_l)
         soup.clear()        
-        """ tag_refl.contents resembles a list of tags inside tag <ol>
-            there are N external references, each
-            closed between 2 tags - <li> and </li>
-            and there is a closing tag </ol>
-            in summary we have 2 * N + 1 elements in tag_refl.contents,
-            where N is number of ext. ref.
         """
-        
+        We search <li> tags through the tag_refl.contents
+        """
+
 # end of reading Wiki
 
-# sorting what we have
-# results.sort(key=lambda x: -x[2])
-# results = results[:limit + 1]
-results = [results]
 # Jinja code interpretating results
 result_page = Template(u'''\
 <html>
@@ -86,13 +74,11 @@ result_page = Template(u'''\
 <th>URL of page</th>
 <th>Amount of external references</th>
 </tr>
-{% for result in item_list -%}
 <tr>
    <td>{{ result[0] }}</td>
    <td><a href="{{ result[1] }}">{{ result[1] }}</td>
    <td align="middle">{{ result[2] }}</td>
 </tr>
-{% endfor %}
 </table>
 </body>
 </html>''')
