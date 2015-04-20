@@ -16,7 +16,6 @@ if line[0] == "page-limit":
 else:
     limit = 100
 # this way we delimit how much we will show
-max_ref = 0
 
 
 # start of reading Wiki
@@ -56,16 +55,10 @@ while next_page_link != "":
             for tag_link in tag_refl.contents:
                 if tag_link.name == 'li':
                     amount += 1
-			if amount > max_ref:
-				max_ref = amount
-            	results = (name, link, amount)
+            results.append((name, link, amount))
         soup.clear()        
-        """ tag_refl.contents resembles a list of tags inside tag <ol>
-            there are N external references, each
-            closed between 2 tags - <li> and </li>
-            and there is a closing tag </ol>
-            in summary we have 2 * N + 1 elements in tag_refl.contents,
-            where N is number of ext. ref.
+        """
+        looking through tag_refl.contents
         """
         
 # end of reading Wiki
