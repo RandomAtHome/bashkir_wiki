@@ -84,6 +84,6 @@ result_page = Template(u'''\
 </html>''')
 # Jinja code ended
 
-print(result_page.render(item_list=results), file=out_html)
+print(result_page.render(result=results), file=out_html)
 out_html.close()
 # creating output file and closing it
